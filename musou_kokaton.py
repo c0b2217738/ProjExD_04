@@ -248,6 +248,8 @@ class Score:
         self.image = self.font.render(f"Score: {self.score}", 0, self.color)
         screen.blit(self.image, self.rect)
         
+        
+        
 
 class Gravity(pg.sprite.Sprite):
     """
@@ -282,6 +284,12 @@ class Gravity(pg.sprite.Sprite):
             self.kill()
         
 
+
+
+
+
+
+
 def main():
     pg.display.set_caption("真！こうかとん無双")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
@@ -295,6 +303,7 @@ def main():
     emys = pg.sprite.Group()
     gravs = pg.sprite.Group()
 
+
     tmr = 0
     clock = pg.time.Clock()
     while True:
@@ -304,11 +313,13 @@ def main():
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
+
             if event.type == pg.KEYDOWN and event.key ==  pg.K_TAB: # TABキーが押されたら重力球
                 # スコア50消費して重力球を生成
                 if score.score >= 10:
                     gravs.add(Gravity(bird, 200, 500)) # (bird, 半径, 発動時間)
                     score.score -= 10
+
 
         screen.blit(bg_img, [0, 0])
 
@@ -320,7 +331,9 @@ def main():
                 # 敵機が停止状態に入ったら，intervalに応じて爆弾投下
                 bombs.add(Bomb(emy, bird))
 
+
         # 敵にビームが当たったときの処理
+
         for emy in pg.sprite.groupcollide(emys, beams, True, True).keys():
             exps.add(Explosion(emy, 100))  # 爆発エフェクト
             score.score_up(10)  # 10点アップ
@@ -335,6 +348,11 @@ def main():
         for bomb in pg.sprite.groupcollide(bombs, gravs, True, False).keys():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.score_up(1)  # 1点アップ
+
+        for bomb in pg.sprite.groupcollide(bombs, beams, True, True).keys():
+            exps.add(Explosion(bomb, 50))  # 爆発エフェクト
+            score.score_up(1)  # 1点アップ
+
 
         if len(pg.sprite.spritecollide(bird, bombs, True)) != 0:
             bird.change_img(8, screen) # こうかとん悲しみエフェクト
@@ -360,10 +378,16 @@ def main():
         clock.tick(50)
         
     
+        score.update(screen)
+
+        pg.display.update()
+        tmr += 1
+        clock.tick(50)
 
 
 if __name__ == "__main__":
     pg.init()
     main()
     pg.quit()
+    sys.exit()
     sys.exit()
