@@ -71,6 +71,8 @@ class Bird(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = xy
         self.speed = 10
+        self.hyper_life = -1
+        self.state = "normal"
 
     def change_img(self, num: int, screen: pg.Surface):
         """
@@ -80,6 +82,21 @@ class Bird(pg.sprite.Sprite):
         """
         self.image = pg.transform.rotozoom(pg.image.load(f"ex04/fig/{num}.png"), 0, 2.0)
         screen.blit(self.image, self.rect)
+
+
+    # 状態変化メソッド
+    def change_state(self, state: str, hyper_life: int):
+        """
+        状態変化メソッド
+        引数1 状態
+        引数2 発動時間
+        """
+        self.state = state
+        self.hyper_life = hyper_life
+        # self.image = pg.transform.laplacian(self.image)
+        # if self.state == "hyper" and hyper_life < 0:
+        #     self.change_state()
+
 
     def update(self, key_lst: list[bool], screen: pg.Surface):
         """
@@ -100,6 +117,13 @@ class Bird(pg.sprite.Sprite):
         if not (sum_mv[0] == 0 and sum_mv[1] == 0):
             self.dire = tuple(sum_mv)
             self.image = self.imgs[self.dire]
+
+        if self.state == "hyper":
+            self.hyper_life -= 1
+            # print(self.hyper_life) # デバッグ用
+            self.image = pg.transform.laplacian(self.image)
+        if self.hyper_life < 0:
+            self.change_state("normal", -1)
         screen.blit(self.image, self.rect)
     
     def get_direction(self) -> tuple[int, int]:
@@ -145,8 +169,6 @@ class Beam(pg.sprite.Sprite):
     """
     ビームに関するクラス
     """
-
-
     def __init__(self, bird: Bird, rot_angle=0):
         """
         ビーム画像Surfaceを生成する
@@ -345,11 +367,6 @@ class Gravity(pg.sprite.Sprite):
             self.kill()
         
 
-
-
-
-
-
 def main():
     pg.display.set_caption("真！こうかとん無双")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
@@ -361,6 +378,11 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
+
+
+    tmr = 0
+    power_score = 100 # 肉体強化に必要なスコア
+
     #future5
     shields = pg.sprite.Group()
     shield_active = False  # 防御壁がアクティブかどうか
@@ -369,8 +391,6 @@ def main():
     gravs = pg.sprite.Group()
 
 
-
-    tmr = 0
     clock = pg.time.Clock()
     while True:
         key_lst = pg.key.get_pressed()
@@ -379,6 +399,14 @@ def main():
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(NeoBeam(bird, 5).gen_beams()
+                          
+            # 肉体強化
+            if event.type == pg.KEYDOWN \
+                and event.key == pg.K_RSHIFT\
+                and score.score >= power_score: # スコアが100以上なら
+                # 呼び出し
+                bird.change_state("hyper", 500)
+                score.score -= power_score
                           
             if event.type == pg.KEYDOWN and event.key == pg.K_RETURN and score.score >= 10:
                 score.score -= 10
@@ -401,6 +429,7 @@ def main():
                 bombs.add(Bomb(emy, bird))
 
 
+
         # 敵にビームが当たったときの処理
         for emy in pg.sprite.groupcollide(emys, beams, True, True).keys():
             exps.add(Explosion(emy, 100))  # 爆発エフェクト
@@ -412,6 +441,19 @@ def main():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.score_up(1)  # 1点アップ
 
+        if len(pg.sprite.spritecollide(bird, bombs, True)) != 0:
+            if bird.state == "normal":
+                bird.change_img(8, screen) # こうかとん悲しみエフェクト
+                score.update(screen)
+                pg.display.update()
+                time.sleep(2)
+                return
+            elif bird.state == "hyper":
+                exps.add(Explosion(bird, 50))  # 爆発エフェクト
+                score.score_up(1)  # 1点アップ
+                score.update(screen)
+                pg.display.update()
+                          
         for bomb in pg.sprite.groupcollide(bombs, gravity, True, False).keys():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.score_up(1)  # 1点アップ
@@ -457,15 +499,10 @@ def main():
         bombs.draw(screen)
         exps.update()
         exps.draw(screen)
-        score.update(screen)
 
         #future5
         shields.update()
         shields.draw(screen)
-
-        pg.display.update()
-        tmr += 1
-        clock.tick(50)
 
         gravity.update()
         gravity.draw(screen)
@@ -477,7 +514,6 @@ def main():
         tmr += 1
         clock.tick(50)
         
-
 if __name__ == "__main__":
     pg.init()
     main()
