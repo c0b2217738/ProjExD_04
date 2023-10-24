@@ -146,6 +146,7 @@ class Beam(pg.sprite.Sprite):
     ビームに関するクラス
     """
 
+
     def __init__(self, bird: Bird, rot_angle=0):
         """
         ビーム画像Surfaceを生成する
@@ -282,6 +283,30 @@ class Score:
         self.image = self.font.render(f"Score: {self.score}", 0, self.color)
         screen.blit(self.image, self.rect)
 
+#future5
+class Shield(pg.sprite.Sprite):
+    def __init__(self, bird, life):
+        super().__init__()
+        self.image = pg.Surface((20, bird.rect.height * 2))
+        self.image.fill((0, 0, 0))  # 黒い矩形
+        self.rect = self.image.get_rect()
+
+        # 防御壁の位置をこうかとんの前に設定
+        direction = bird.get_direction()
+        if direction == (1, 0):
+            self.rect.topleft = (bird.rect.right, bird.rect.centery - bird.rect.height)
+        elif direction == (-1, 0):
+            self.rect.topleft = (bird.rect.left - 20, bird.rect.centery - bird.rect.height)
+        elif direction == (0, 1):
+            self.rect.topleft = (bird.rect.centerx - 10, bird.rect.bottom)
+        elif direction == (0, -1):
+            self.rect.topleft = (bird.rect.centerx - 10, bird.rect.top - bird.rect.height * 2)
+        self.life = life
+
+    def update(self):
+        self.life -= 1
+        if self.life <= 0:
+            self.kill()
 
         
         
@@ -325,7 +350,6 @@ class Gravity(pg.sprite.Sprite):
 
 
 
-
 def main():
     pg.display.set_caption("真！こうかとん無双")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
@@ -337,6 +361,10 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
+    #future5
+    shields = pg.sprite.Group()
+    shield_active = False  # 防御壁がアクティブかどうか
+
     gravity = pg.sprite.Group()
     gravs = pg.sprite.Group()
 
@@ -373,17 +401,13 @@ def main():
                 bombs.add(Bomb(emy, bird))
 
 
-
         # 敵にビームが当たったときの処理
         for emy in pg.sprite.groupcollide(emys, beams, True, True).keys():
             exps.add(Explosion(emy, 100))  # 爆発エフェクト
             score.score_up(10)  # 10点アップ
             bird.change_img(6, screen)  # こうかとん喜びエフェクト
-
-        for bomb in pg.sprite.groupcollide(bombs, beams, True, True).keys():
-            exps.add(Explosion(bomb, 50))  # 爆発エフェクト
-            score.score_up(1)  # 1点アップ
-
+                          
+        # 爆弾にビームが当たったときの処理
         for bomb in pg.sprite.groupcollide(bombs, beams, True, True).keys():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.score_up(1)  # 1点アップ
@@ -396,20 +420,12 @@ def main():
             exps.add(Explosion(emy, 100))  # 爆発エフェクト
             score.score_up(10)  # 10点アップ
             bird.change_img(6, screen)  # こうかとん喜びエフェクト
-
-        # 爆弾にビームが当たったときの処理
-        for bomb in pg.sprite.groupcollide(bombs, beams, True, True).keys():
-            exps.add(Explosion(bomb, 50))  # 爆発エフェクト
-            score.score_up(1)  # 1点アップ
         
         # 爆弾に重力球があたったときも処理
         for bomb in pg.sprite.groupcollide(bombs, gravs, True, False).keys():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.score_up(1)  # 1点アップ
 
-        for bomb in pg.sprite.groupcollide(bombs, beams, True, True).keys():
-            exps.add(Explosion(bomb, 50))  # 爆発エフェクト
-            score.score_up(1)  # 1点アップ
 
         if len(pg.sprite.spritecollide(bird, bombs, True)) != 0:
             bird.change_img(8, screen) # こうかとん悲しみエフェクト
@@ -417,6 +433,20 @@ def main():
             pg.display.update()
             time.sleep(2)
             return
+        
+        #future5
+        if key_lst[pg.K_a] and score.score >= 50 and not shield_active:
+            # Aキーが押され、スコアが50以上で、防御壁がアクティブでない場合
+            shields.add(Shield(bird, 400))  # 防御壁を発動
+            shield_active = True
+            score.score_up(-50)  # スコアを減少させる
+        
+        # 防御壁と爆弾の衝突を検出し、爆弾を破壊
+        for shield in pg.sprite.groupcollide(shields, bombs, False, True).keys():
+            exps.add(Explosion(shield, 50))  # 防御壁の爆発エフェクト
+            score.score_up(1)  # スコアを増加
+            shield.kill()  # 防御壁を削除
+            shield_active = False  # 防御壁の寿命が尽きたら非アクティブにする
 
         bird.update(key_lst, screen)
         beams.update()
@@ -427,6 +457,16 @@ def main():
         bombs.draw(screen)
         exps.update()
         exps.draw(screen)
+        score.update(screen)
+
+        #future5
+        shields.update()
+        shields.draw(screen)
+
+        pg.display.update()
+        tmr += 1
+        clock.tick(50)
+
         gravity.update()
         gravity.draw(screen)
         gravs.update()
@@ -443,4 +483,3 @@ if __name__ == "__main__":
     main()
     pg.quit()
     sys.exit()
-
