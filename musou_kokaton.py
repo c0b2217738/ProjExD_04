@@ -277,7 +277,7 @@ class Gravity(pg.sprite.Sprite):
         制限時間が来たら重量球を解除
         引数 screen：画面Surface
         """
-        # self.rect.move_ip(self.rect.centerx, self.rect.centery)
+        
         self.life -= 1
         if self.life < 0:
             self.kill()
@@ -306,7 +306,12 @@ def main():
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
             if event.type == pg.KEYDOWN and event.key ==  pg.K_TAB: # TABキーが押されたら重力球
-                gravs.add(Gravity(bird, 200, 500)) # (bird, 半径, 発動時間)
+                # スコア50消費して重力球を生成
+                if score.score >= 50:
+                    gravs.add(Gravity(bird, 200, 500)) # (bird, 半径, 発動時間)
+                    score.score_up(-50)
+                else:
+                    pass
         screen.blit(bg_img, [0, 0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
