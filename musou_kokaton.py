@@ -398,7 +398,7 @@ def main():
             if event.type == pg.QUIT:
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
-                beams.add(NeoBeam(bird, 5).gen_beams()
+                beams.add(NeoBeam(bird, 5).gen_beams())
             if event.type == pg.KEYDOWN and event.key == pg.K_LSHIFT:
                 bird.speed = 20
             else:
