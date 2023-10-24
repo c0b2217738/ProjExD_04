@@ -171,6 +171,25 @@ class Beam(pg.sprite.Sprite):
             self.kill()
 
 
+class NeoGravity(pg.sprite.Sprite):
+    """
+    重力場に関するクラス
+    """
+    def __init__(self, life: int):
+        super().__init__()
+        self.image = pg.Surface((WIDTH, HEIGHT), flags=pg.SRCALPHA)
+        self.image.fill((0,0,0,120))
+        self.rect = self.image.get_rect()
+        self.life = life
+
+    def update(self):
+        self.life -= 1
+        if self.life < 0:
+            self.kill()
+        
+
+
+
 class Explosion(pg.sprite.Sprite):
     """
     爆発に関するクラス
@@ -247,6 +266,8 @@ class Score:
     def update(self, screen: pg.Surface):
         self.image = self.font.render(f"Score: {self.score}", 0, self.color)
         screen.blit(self.image, self.rect)
+
+
         
         
         
@@ -301,7 +322,9 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
+    gravity = pg.sprite.Group()
     gravs = pg.sprite.Group()
+
 
 
     tmr = 0
@@ -313,6 +336,9 @@ def main():
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
+            if event.type == pg.KEYDOWN and event.key == pg.K_RETURN and score.score >= 10:
+                score.score -= 10
+                gravity.add(NeoGravity(10))
 
             if event.type == pg.KEYDOWN and event.key ==  pg.K_TAB: # TABキーが押されたら重力球
                 # スコア50消費して重力球を生成
@@ -332,9 +358,24 @@ def main():
                 bombs.add(Bomb(emy, bird))
 
 
+
         # 敵にビームが当たったときの処理
 
         for emy in pg.sprite.groupcollide(emys, beams, True, True).keys():
+            exps.add(Explosion(emy, 100))  # 爆発エフェクト
+            score.score_up(10)  # 10点アップ
+            bird.change_img(6, screen)  # こうかとん喜びエフェクト
+
+
+        for bomb in pg.sprite.groupcollide(bombs, beams, True, True).keys():
+            exps.add(Explosion(bomb, 50))  # 爆発エフェクト
+            score.score_up(1)  # 1点アップ
+
+        for bomb in pg.sprite.groupcollide(bombs, gravity, True, False).keys():
+            exps.add(Explosion(bomb, 50))  # 爆発エフェクト
+            score.score_up(1)  # 1点アップ
+
+        for emy in pg.sprite.groupcollide(emys, gravity, True, False).keys():
             exps.add(Explosion(emy, 100))  # 爆発エフェクト
             score.score_up(10)  # 10点アップ
             bird.change_img(6, screen)  # こうかとん喜びエフェクト
@@ -370,12 +411,16 @@ def main():
         bombs.draw(screen)
         exps.update()
         exps.draw(screen)
+        gravity.update()
+        gravity.draw(screen)
         gravs.update()
         gravs.draw(screen)
+
         score.update(screen)
         pg.display.update()
         tmr += 1
         clock.tick(50)
+
         
     
         score.update(screen)
@@ -391,3 +436,4 @@ if __name__ == "__main__":
     pg.quit()
     sys.exit()
     sys.exit()
+
