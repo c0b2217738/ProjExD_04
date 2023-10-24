@@ -309,9 +309,8 @@ def main():
                 # スコア50消費して重力球を生成
                 if score.score >= 50:
                     gravs.add(Gravity(bird, 200, 500)) # (bird, 半径, 発動時間)
-                    score.score_up(-50)
-                else:
-                    pass
+                    score.score -= 50
+
         screen.blit(bg_img, [0, 0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
